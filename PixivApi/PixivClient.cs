@@ -869,7 +869,7 @@ public class PixivClient
     /// <returns></returns>
     public async Task<List<IllustProfile>> GetUserBookmarkIllustsAsync(int userId, int offset, int limit = 48, bool isPrivate = false, string? tag = null)
     {
-        limit = Math.Clamp(limit, 1, 100);
+        limit = CommonHelper.Clamp(limit, 1, 100);
         if (!string.IsNullOrWhiteSpace(tag))
         {
             tag = Uri.EscapeDataString(tag);
@@ -917,7 +917,7 @@ public class PixivClient
     /// <returns></returns>
     public async Task<List<NovelProfile>> GetUserBookmarkNovelsAsync(int userId, int offset, int limit = 24, string? tag = null, bool isPrivate = false)
     {
-        limit = Math.Clamp(limit, 1, 100);
+        limit = CommonHelper.Clamp(limit, 1, 100);
         if (!string.IsNullOrWhiteSpace(tag))
         {
             tag = Uri.EscapeDataString(tag);
@@ -972,7 +972,7 @@ public class PixivClient
     /// <returns></returns>
     public async Task<List<FollowingUser>> GetFollowingUsersAsync(int userId, int offset, int limit = 100, bool isPrivate = false)
     {
-        limit = Math.Clamp(limit, 0, 100);
+        limit = CommonHelper.Clamp(limit, 1, 100);
         var url = $"/ajax/user/{userId}/following?offset={offset}&limit={limit}&rest={(isPrivate ? "hide" : "show")}";
         var wrapper = await CommonGetAsync<FollowingUserWrapper>(url);
         return wrapper.Users;
