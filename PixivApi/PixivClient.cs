@@ -73,6 +73,18 @@ public class PixivClient
         _httpClient.DefaultRequestHeaders.Add("Referer", BASE_URI_HTTPS);
     }
 
+    /// <summary>
+    /// 设置 HTTP 代理
+    /// </summary>
+    /// <param name="httpProxy">HTTP代理</param>
+    public PixivClient(WebProxy httpProxy)
+    {
+        _httpClient = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip, Proxy = httpProxy });
+        _httpClient.BaseAddress = new Uri(BASE_URI_HTTPS);
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", DEFAULT_USER_AGENT);
+        _httpClient.DefaultRequestHeaders.Add("Referer", BASE_URI_HTTPS);
+    }
+
 
     /// <summary>
     /// 使用账号，绕过 SNI 阻断
@@ -81,7 +93,7 @@ public class PixivClient
     /// <param name="userAgent">浏览器ua</param>
     /// <param name="bypassSNI">绕过SNI阻断</param>
     /// <param name="ip">直连ip，若为空则使用Pixivision的IP</param>
-    public PixivClient(string cookie, string userAgent, bool bypassSNI = false, string? ip = null)
+    public PixivClient(string cookie, string userAgent, bool bypassSNI = false, string? ip = null, WebProxy httpProxy = null)
     {
         if (bypassSNI)
         {
@@ -90,7 +102,7 @@ public class PixivClient
         }
         else
         {
-            _httpClient = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip });
+            _httpClient = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip, Proxy = httpProxy });
             _httpClient.BaseAddress = new Uri(BASE_URI_HTTPS);
         }
         _httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
@@ -257,7 +269,6 @@ public class PixivClient
         var url = $"ranking.php?mode={rankType.ToString().ToLower()}";
         string raw = await HttpClient.GetStringAsync(url);
         HtmlDocument document = new();
-        // document.Load(@"C:\Users\An\Desktop\1.html");
         document.LoadHtml(raw);
         var list = document.DocumentNode.SelectSingleNode("//div[@class=\"ranking-items-container\"]/div[@class=\"ranking-items adjust\"]");
         List<IllustRankItem> ls = new();
@@ -289,13 +300,16 @@ public class PixivClient
         {
             throw new PixivException("Pic's url is empty.");
         }
-        // pximg与主站证书不同 无法绕过SNI阻断
-        url = url.Replace("https://i.pximg.net", "http://210.140.92.136");
+        if(HttpClient.BaseAddress.ToString() == BASE_URI_HTTP)
+        {
+            // pximg与主站证书不同 无法绕过SNI阻断
+            url = url.Replace("https://i.pximg.net", "http://210.140.92.136");
+        }
         if (Directory.Exists(path) is false)
         {
             Directory.CreateDirectory(path);
         }
-        HttpClient downloadClient = new();
+        using HttpClient downloadClient = new();
         downloadClient.DefaultRequestHeaders.Add("Referer", "https://www.pixiv.net/");
         byte[] buffer = await downloadClient.GetByteArrayAsync(url);
         if (buffer.Length == 0)
